@@ -1,0 +1,19 @@
+{
+  "name": "note",
+  "version": "1.0.0",
+  "description": "记录一些知识，方便查阅",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keiouks/note.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/keiouks/note/issues"
+  },
+  "homepage": "https://github.com/keiouks/note#readme"
+}
