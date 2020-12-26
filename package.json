@@ -15,5 +15,6 @@
   "bugs": {
     "url": "https://github.com/keiouks/note/issues"
   },
-  "homepage": "https://github.com/keiouks/note#readme"
+  "homepage": "https://github.com/keiouks/note#readme",
+  "dependencies": {}
 }
