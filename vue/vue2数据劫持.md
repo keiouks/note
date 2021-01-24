@@ -324,3 +324,10 @@ function observe(data) {
 - 比如会判断能不能用__proto__
 - 比如如果要劫持的属性本身已经定义了getter或setter，就要根据情况进一步讨论
 - 比如会考虑对象的configurable配置，writable配置。
+
+## vue2 用Object.defineProperty做数据劫持的缺点：
+
+- Object.defineProperty，不具备监听数组的能力，需重新定义数组的原型来达到响应式。
+- Object.defineProperty 无法检测到对象属性的添加和删除 。
+- Vue初始化实例时对data进行劫持，属性必须在data对象上存在才能让Vue将它转换为响应式。
+- 深度监听需要一次性递归，对性能影响比较大。
