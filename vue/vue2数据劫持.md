@@ -4,10 +4,10 @@
 
 ```javascript
 // src/core/instance/state.js
-// vue在初始化构建的时候，会那data去做初始化，而数据劫持就是从这里开始
+// vue在初始化构建的时候，会拿data去做初始化，而数据劫持就是从这里开始
 // 当然，还有组件属性的劫持，还有方法的监听，但这里从data的劫持就能知道vue 2究竟是怎么劫持数据做响应式的
 function initData (vm: Component) {
-  // $options就是使用new vue是传进来的整个配置，包括data，method，created，components等
+  // $options就是使用new vue时传进来的整个配置，包括data，method，created，components等属性
   // initData之前的行为创建了$options
   let data = vm.$options.data
   // 给vm加个_data属性，下面有用
@@ -22,7 +22,6 @@ function initData (vm: Component) {
       vm
     )
   }
-  // proxy data on instance
   // 拿到data上的key
   const keys = Object.keys(data)
   const props = vm.$options.props
@@ -46,9 +45,11 @@ function initData (vm: Component) {
         `Use prop default value instead.`,
         vm
       )
-    } else if (!isReserved(key)) { // 判断是否$ 或 _开头，如果不是
+    } else if (!isReserved(key)) {
+      // 判断是否$ 或 _开头，如果不是
       // 给vm直接添加key属性，通过Object.defineProperty，
-      // 而get和set都是通过vm._data[key]这个中间量
+      // 而get和set都是通过vm._data[key]这个中间量来存取
+      // 所以可以通过vm[key]直接访问到一开始在data设置的属性
       proxy(vm, `_data`, key)
     }
   }
@@ -73,13 +74,14 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     shouldObserve && // 需要劫持
     !isServerRendering() && // 非服务端渲染
     (Array.isArray(value) || isPlainObject(value)) && // 是数组，或，是普通对象
-    Object.isExtensible(value) && // 是可扩展
+    Object.isExtensible(value) && // 是可扩展，这里就是读对象的配置属性
     !value._isVue // 没有'_isVue'这个属性
   ) {
     // 具体劫持工作在这个类构造里面
     ob = new Observer(value)
   }
   // 如果是根数据，并且拿到被劫持的对象
+  // 记录有几个vm用这个对象做根data
   if (asRootData && ob) {
     ob.vmCount++
   }
@@ -89,7 +91,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 export class Observer {
   value: any;
   dep: Dep;
-  vmCount: number; // number of vms that have this object as root $data
+  vmCount: number;
 
   constructor (value: any) {
     this.value = value
@@ -101,12 +103,12 @@ export class Observer {
     if (Array.isArray(value)) {
       // 判断能不能用__proto__属性，const hasProto = '__proto__' in {}
       // 下面的 arrayMethods是关键，是对Array.prototype里面方法改造后凑成的新的数组方法集合
-      // 目的是用改造后的数组方法替换原有的数组方法，为了让那些数组方法的调用也能收到劫持影响。
+      // 目的是用改造后的数组方法替换原有的数组方法，为了让那些数组方法的调用也能受到劫持影响。
       if (hasProto) {
         // 把arrayMethods作为劫持数组的__proto__  
         protoAugment(value, arrayMethods)
       } else {
-        // 把arrayMethods里面的每个属性/方法逐个定义到被劫持的对象里面
+        // 把arrayMethods里面的每个属性/方法逐个定义到被劫持的数组里面
         copyAugment(value, arrayMethods, arrayKeys)
       }
       // 对数组里面的元素递归调用observe，逐个劫持
@@ -114,6 +116,7 @@ export class Observer {
     } else {
       // 所有未被劫持的对象最后都会走到这里，
       // 从data这个根开始递归走到这里
+      // 数组的元素是对象的话也会走到这里
       this.walk(value)
     }
   }
@@ -140,7 +143,7 @@ export function defineReactive (
     return
   }
 
-  // cater for pre-defined getter/setters
+  // 拿到原来的配置里面的setter和getter，如果原来的属性就已经被劫持过就会有，目的是根据原来的情况判断是否只读，同时要用原有getter和setter保持一致
   const getter = property && property.get
   const setter = property && property.set
   if ((!getter || setter) && arguments.length === 2) {
@@ -169,11 +172,10 @@ export function defineReactive (
     },
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
-      // 如果要设置的值相当，什么都不做，后面的自己不等于自己就是NaN，两个都是NaN，就认为是相等
+      // 如果要设置的值跟原来的相同，什么都不做，后面变量自己不等于自己这种写法，为true的话就是NaN，两个都是NaN，就认为是相等
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
-      /* eslint-enable no-self-compare */
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
       }
@@ -198,7 +200,7 @@ export function defineReactive (
 // src/core/observer/array.js
 import { def } from '../util/index'
 
-// 拿到Array原生方法结合
+// 拿到Array原生方法集合
 const arrayProto = Array.prototype
 // 创造新对象，把arrayProto作为arrayMethods的prototype
 export const arrayMethods = Object.create(arrayProto)
@@ -214,9 +216,6 @@ const methodsToPatch = [
   'reverse'
 ]
 
-/**
- * Intercept mutating methods and emit events
- */
  // 逐个方法重写，重写数组的方法，用这些方法替换原来的方法，因为原来的方法不受劫持的监听
 methodsToPatch.forEach(function (method) {
   // 拿到方法
@@ -226,7 +225,8 @@ methodsToPatch.forEach(function (method) {
     // 方法运行结果，this将会是被劫持的对象，因为arrayMethods会成为被劫持对象的__proto__或者其里面的方法会成为被劫持对象的属性
     const result = original.apply(this, args)
     const ob = this.__ob__
-    // 如果给数组新增了元素，某些方法会，新增的元素也要加劫持
+    // 某些方法会给数组新增元素，新增的元素也要被劫持
+    // 这里就是知道哪些方法会新增元素，并获取被新增的元素数组
     let inserted 
     switch (method) {
       case 'push':
@@ -237,7 +237,7 @@ methodsToPatch.forEach(function (method) {
         inserted = args.slice(2)
         break
     }
-    // 新加的元素也要加劫持
+    // 新加的元素加劫持
     if (inserted) ob.observeArray(inserted)
     // 通知有劫持数据变化
     ob.dep.notify()
@@ -253,15 +253,19 @@ methodsToPatch.forEach(function (method) {
 抽出vue 2劫持对象的关键代码，做个简短实现
 
 ```javascript
+// 针对数组的准备
 const oldProto = Array.prototype;
 // 新的proto要覆盖某些数组方法
+// 先收集这些方法
 const newProto = Object.create(oldProto);
 // 要覆盖的方法
 ['push','pop','unshift','shift','sort','splice','reverse'].forEach((method) => {
+  // 新proto写同名方法
   newProto[method] = function(..args) {
+    // 还是调用已有·原有方法的实现
     const result = oldProto[method].apply(this, args);
     let inserted;
-    // 这几个方法会新增元素，拿到新增的元素
+    // 会新增元素的方法，拿到新增的元素数组
     switch (method) {
       case 'push':
       case 'unshift':
@@ -294,7 +298,8 @@ function observe(data) {
   // 遍历所有属性
   Object.keys(data).forEach(key => {
     const value = data[key];
-    // 每个属性值进行递归劫持，如果这个属性值不是对象或数组，什么都不会放生，
+    // 每个属性值进行递归劫持，
+    // 如果这个属性值不是对象或数组，什么都不会发生，
     // 否则就进行劫持
     observe(value);
     // 进行劫持
@@ -323,11 +328,12 @@ function observe(data) {
 以上就是vue 2的主要劫持方法的超简化版，vue 2里面做个很多额外判断
 - 比如会判断能不能用__proto__
 - 比如如果要劫持的属性本身已经定义了getter或setter，就要根据情况进一步讨论
-- 比如会考虑对象的configurable配置，writable配置。
+- 比如会考虑属性的configurable配置，writable配置。
 
 ## vue2 用Object.defineProperty做数据劫持的缺点：
 
-- Object.defineProperty，不具备监听数组的能力，需重新定义数组的原型来达到响应式。
+- Object.defineProperty不具备监听数组的能力，需重新定义数组的原型来达到响应式。
 - Object.defineProperty 无法检测到对象属性的添加和删除 。
+- Object.defineProperty监听对象的属性，颗粒度小，消耗更大。
 - Vue初始化实例时对data进行劫持，属性必须在data对象上存在才能让Vue将它转换为响应式。
 - 深度监听需要一次性递归，对性能影响比较大。
