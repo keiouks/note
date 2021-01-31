@@ -2,7 +2,7 @@
 
 ## 相比vue-cli的优势
 
-vite让html模板引入js文件用了
+vite让html模板引入js文件用了`module`类型
 ```html
 <script type="module" src="/src/main.js"></script>
 ```
@@ -15,7 +15,7 @@ vite按需编译当前页面需要的组件，而不需要打包整个APP的组�
 
 ## vite内置TS的支持
 
-内置的TS不是TS官方出的tsc cli，而是ESBuild
+内置的TS解析器不是TS官方出的tsc cli，而是ESBuild
 
 - Esbuild用GO语言直接编译成原生代码
 - GO语言特点，它的解析和映射并发非常快
