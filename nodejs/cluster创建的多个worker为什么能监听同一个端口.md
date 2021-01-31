@@ -13,6 +13,16 @@ if (cluster.isMaster) {
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
+  // worker创建成功打印提示
+  cluster.on('online', (worker) => {
+    console.log('Create worker：' + worker.process.pid);
+  });
+
+  // 有worker退出，再起一个
+  cluster.on('exit', (worker, code, signal) => {
+    console.log('[Master] worker ' + worker.process.pid + ' died with code:' + code + ', and signal: ' + signal);
+    cluster.fork(); // 重启子进程
+  });
  
 } else {
  
