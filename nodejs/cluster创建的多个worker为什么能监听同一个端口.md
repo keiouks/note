@@ -11,7 +11,9 @@ if (cluster.isMaster) {
  
   const numCPUs = os.cpus().length;
   for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
+    var worker = cluster.fork();
+    // master给worker发信息
+    worder.send('xx');
   }
   // worker创建成功打印提示
   cluster.on('online', (worker) => {
@@ -25,7 +27,11 @@ if (cluster.isMaster) {
   });
  
 } else {
- 
+  // worker接收master发来的消息
+  process.on('message', function(msg) {
+    // worker向master发消息
+    process.send(msg);
+  });
   // Worker processes have a http server.
   http.Server((req, res) => {
     res.writeHead(200);
