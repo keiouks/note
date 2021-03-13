@@ -1,0 +1,22 @@
+.out {
+  position: relative;
+  width: 500px;
+  height: 500px;
+  border: 1px solid #000;
+}
+.in1 {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 200px;
+  height: 200px;
+  background: green;
+}
+.in2 {
+  position: absolute;
+  top: 100px;
+  left: 100px;
+  width: 200px;
+  height: 200px;
+  background: yellow;
+}

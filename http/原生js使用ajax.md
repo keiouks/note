@@ -25,6 +25,7 @@ function ajax(options = {}) {
   const xhr = new XMLHttpRequest();
   // 准备好定时器
   let timer = '';
+  // 第三个参数true表示js异步执行
   xhr.open(options.type, options.url, true);
   xhr.onreadystatechange = function() {
     // 这个状态是4的时候就是数据已经返回完并且解析好了
@@ -67,7 +68,7 @@ function ajax(options = {}) {
 }
 
 function serialize (data) {
-  const paramList = Object.keys(data).may((key) => (`${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`));
+  const paramList = Object.keys(data).map((key) => (`${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`));
   paramList.push(`_=${Math.random()}`.replace('.', ''));
   return paramList.join('&');
 }

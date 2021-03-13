@@ -33,7 +33,7 @@ export function install (Vue) {
       i(vm, callVal)
     }
   }
-  // 给Vue加全局mixin
+  // 给Vue加全局mixin，加了之后，vue就会运行下面的生命周期函数
   Vue.mixin({
     beforeCreate () {
       // Vue刚开始运行就给它加上_router和_route属性  
